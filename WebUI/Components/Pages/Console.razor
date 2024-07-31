@@ -1,0 +1,150 @@
+﻿@page "/console"
+@rendermode InteractiveServer
+@using ServerManager.Container;
+@using System;
+@inject ILogger<Console> Logger
+@inject IJSRuntime JSRuntime
+
+<div class="sidebar">
+	<h3>Container</h3>
+
+	@if (current != null)
+	{
+		<p>
+			State: @containerState - Running: @(containerRunning ? "Yes" : "No")
+		</p>
+
+		@if (containerRunning)
+		{
+			<button @onclick="StopContainer">Stop</button>
+		}
+		else
+		{
+			<button @onclick="StartContainer">Start</button>
+		}
+	}
+</div>
+
+<div class="console" id="console">
+	@foreach (var line in consoleContent.Split("\n"))
+	{
+		<p class="line">
+			@(line)
+		</p>
+	}
+</div>
+
+<script>
+	function scrollDown() {
+		console.log("test");
+		var consoleScroll = document.getElementById("console");
+		consoleScroll.scrollTop = consoleScroll.scrollHeight;
+	}
+</script>
+
+@code {
+
+	string consoleContent = "";
+	Container? current = null;
+	bool containerRunning = false;
+	string containerState = "stopped";
+
+	protected async override Task OnParametersSetAsync()
+	{
+		if (!await Container.ContainerExists(containerId))
+		{
+			return;
+		}
+
+		Logger.Log(LogLevel.Information, containerId);
+		current = await Container.CreateFromId(containerId);
+
+		if (await current.IsRunning())
+		{
+			UpdateConsole();
+		}
+	}
+
+	protected override Task OnAfterRenderAsync(bool firstRender)
+	{
+		JSRuntime.InvokeVoidAsync("scrollDown", null);
+		return base.OnAfterRenderAsync(firstRender);
+	}
+
+	async Task StartContainer()
+	{
+		consoleContent = "";
+		if (current == null)
+		{
+			return;
+		}
+
+		if (await current.IsRunning())
+		{
+			return;
+		}
+
+		await current.Start();
+		Logger.LogInformation("Starting...");
+	}
+
+	async Task StopContainer()
+	{
+		if (current == null)
+		{
+			return;
+		}
+
+		await current.Stop();
+		StateHasChanged();
+	}
+
+	async Task<bool> UpdateLog()
+	{
+		bool changed = false;
+		while (true)
+		{
+			string newOutput = await current!.GetOutput();
+
+			if (newOutput == "")
+			{
+				break;
+			}
+			consoleContent += newOutput;
+			changed = true;
+		}
+
+		return changed;
+	}
+
+	async Task UpdateConsole()
+	{
+		if (current == null)
+		{
+			return;
+		}
+
+		containerRunning = true;
+		while (true)
+		{
+			if (await UpdateLog())
+			{
+				StateHasChanged();
+			}
+
+			await Task.Delay(50);
+			containerState = await current.GetStatus();
+
+			bool newIsRunning = await current.IsRunning();
+
+			if (newIsRunning != containerRunning)
+			{
+				containerRunning = newIsRunning;
+				StateHasChanged();
+			}
+		}
+	}
+
+	[SupplyParameterFromQuery(Name = "id")]
+	public string containerId { get; set; } = "";
+}

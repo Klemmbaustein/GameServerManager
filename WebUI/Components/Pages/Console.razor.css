@@ -1,0 +1,22 @@
+﻿
+.console {
+	background-color: black;
+	color: white;
+	width: calc(100% - 30em);
+	height: calc(100%);
+	margin: 0;
+	margin-left: 27em;
+	padding: 0.5em;
+	font-family: monospace;
+	overflow: scroll;
+}
+
+.line{
+	margin: 0;
+}
+
+.sidebar{
+	width: 15em;
+	float: left;
+	overflow-wrap: anywhere;
+}

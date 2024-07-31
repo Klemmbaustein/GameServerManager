@@ -1,0 +1,10 @@
+{
+  "name": "minecraft-server",
+  "image": "itzg/minecraft-server:latest",
+  "env": [
+	"EULA=TRUE"
+  ],
+  "exposed_ports": {
+	"25565/tcp": [ "25565" ]
+  }
+}

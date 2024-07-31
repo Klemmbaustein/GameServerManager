@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "CLI": {
+      "commandName": "Project",
+      "workingDirectory": "./"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
